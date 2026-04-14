@@ -51,7 +51,6 @@ class CustomizeSheet extends StatefulWidget {
 class _CustomizeSheetState extends State<CustomizeSheet>
     with SingleTickerProviderStateMixin {
   int _quantity = 1;
-  static const double _unitPrice = 24.00;
 
   final List<_Topping> _toppings = [
     _Topping('Extra Truffle', isSelected: true),
@@ -90,6 +89,7 @@ class _CustomizeSheetState extends State<CustomizeSheet>
     setState(() => _quantity--);
   }
 
+  double get _unitPrice => widget.prefillItem?.unitPrice ?? 0.0;
   double get _total => _unitPrice * _quantity;
 
   void _addToOrder() {
@@ -99,10 +99,11 @@ class _CustomizeSheetState extends State<CustomizeSheet>
       id: widget.prefillItem?.id ?? 'custom_${DateTime.now().millisecondsSinceEpoch}',
       name: widget.prefillItem?.name ?? 'Truffle Burrata Salad',
       category: widget.prefillItem?.category ?? 'SALADS',
+      description: widget.prefillItem?.description ?? '',
       detail: _toppings.where((t) => t.isSelected).map((t) => t.label).join(', '),
       imageUrl: widget.prefillItem?.imageUrl ??
           'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&q=80',
-      unitPrice: widget.prefillItem?.unitPrice ?? _unitPrice,
+      unitPrice: _unitPrice,
       quantity: _quantity,
     ));
     Navigator.of(context).pop();
@@ -151,7 +152,7 @@ class _CustomizeSheetState extends State<CustomizeSheet>
   Widget _header() => Padding(
     padding: const EdgeInsets.fromLTRB(20, 8, 12, 16),
     child: Row(children: [
-      Text('Customize Item', style: GoogleFonts.manrope(
+      Text('تخصيص الطلب', style: GoogleFonts.manrope(
           fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.48)),
       const Spacer(),
       GestureDetector(onTap: () => Navigator.of(context).pop(),
@@ -173,18 +174,18 @@ class _CustomizeSheetState extends State<CustomizeSheet>
       Text(widget.prefillItem?.name ?? 'Truffle Burrata Salad',
         style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.4)),
       const SizedBox(height: 6),
-      Text('Creamy burrata, black truffle shavings, aged balsamic, and seasonal microgreens.',
+      Text(widget.prefillItem?.description ?? 'Creamy burrata, black truffle shavings, aged balsamic, and seasonal microgreens.',
         style: GoogleFonts.manrope(fontSize: 13, color: AppColors.onSurfaceVariant, height: 1.5)),
     ])),
   ]);
 
   Widget _toppingsSection() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Row(children: [
-      Text('SELECT TOPPINGS', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.8)),
+      Text('اختر الإضافات', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.8)),
       const Spacer(),
       Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(4)),
-        child: Text('REQUIRED', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700,
+        child: Text('مطلوب', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700,
             color: AppColors.onPrimary, letterSpacing: 0.8))),
     ]),
     const SizedBox(height: 12),
@@ -194,7 +195,7 @@ class _CustomizeSheetState extends State<CustomizeSheet>
   ]);
 
   Widget _dietarySection() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text('DIETARY NOTES', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.8)),
+    Text('ملاحظات غذائية', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.8)),
     const SizedBox(height: 10),
     ..._dietary.asMap().entries.map((e) => Padding(
       padding: EdgeInsets.only(bottom: e.key < _dietary.length - 1 ? 10 : 0),
@@ -202,7 +203,7 @@ class _CustomizeSheetState extends State<CustomizeSheet>
   ]);
 
   Widget _specialInstructions() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text('SPECIAL INSTRUCTIONS', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.8)),
+    Text('تعليمات خاصة', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.8)),
     const SizedBox(height: 10),
     Container(
       decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(16)),
@@ -210,7 +211,7 @@ class _CustomizeSheetState extends State<CustomizeSheet>
         minLines: 4, maxLines: 6,
         style: GoogleFonts.manrope(fontSize: 14, color: Colors.white),
         decoration: InputDecoration(
-          hintText: 'e.g. Please serve dressing on the side...',
+          hintText: 'مثال: بدون بصل، صوص خارجي...',
           hintStyle: GoogleFonts.manrope(fontSize: 13, color: AppColors.outline),
           filled: false,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
@@ -366,8 +367,8 @@ class _AddToOrderBtnState extends State<_AddToOrderBtn> with SingleTickerProvide
         decoration: BoxDecoration(gradient: AppGradients.primaryCta, borderRadius: BorderRadius.circular(16), boxShadow: AppShadows.primaryGlow),
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(children: [
-          Text('Add to Order', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.onPrimary, letterSpacing: -0.2)),
+          Text('إضافة للطلب', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.onPrimary, letterSpacing: -0.2)),
           const Spacer(),
-          Text('\$${widget.price.toStringAsFixed(2)}', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.onPrimary, letterSpacing: -0.3)),
+          Text('${widget.price.toStringAsFixed(0)} ج', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.onPrimary, letterSpacing: -0.3)),
         ]))));
 }
