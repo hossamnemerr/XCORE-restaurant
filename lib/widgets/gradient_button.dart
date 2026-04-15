@@ -1,126 +1,70 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../theme/app_theme.dart';
-
-// ─────────────────────────────────────────────
-//  GRADIENT BUTTON
-// ─────────────────────────────────────────────
-
-class GradientButton extends StatefulWidget {
-  /// Primary label text — rendered in uppercase automatically.
-  final String label;
-
-  /// Called when the button is tapped.
-  final VoidCallback onPressed;
-
-  /// Optional leading or trailing icon widget.
-  final Widget? icon;
-
-  /// Where to place the icon relative to the label.
-  final IconPosition iconPosition;
-
-  /// Button height. Defaults to 56.
-  final double height;
-
-  /// Override border radius. Defaults to AppRadius.button (12).
-  final double? borderRadius;
-
-  /// Whether to show a loading state.
-  final bool isLoading;
-
-  /// Whether the button is interactive.
-  final bool enabled;
-
-  const GradientButton({
-    super.key,
-    required this.label,
-    required this.onPressed,
-    this.icon,
-    this.iconPosition = IconPosition.trailing,
-    this.height = 56,
-    this.borderRadius,
-    this.isLoading = false,
-    this.enabled = true,
-  });
-
-  @override
-  State<GradientButton> createState() => _GradientButtonState();
-}
 
 enum IconPosition { leading, trailing }
 
-class _GradientButtonState extends State<GradientButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scale;
+class GradientButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onPressed;
+  final Widget? icon;
+  final IconPosition iconPosition;
+  final double height;
+  final double? borderRadius;
+  final bool isLoading, enabled;
 
+  const GradientButton({
+    super.key, required this.label, required this.onPressed,
+    this.icon, this.iconPosition = IconPosition.trailing,
+    this.height = 56, this.borderRadius, this.isLoading = false, this.enabled = true,
+  });
+
+  @override State<GradientButton> createState() => _GradientButtonState();
+}
+
+class _GradientButtonState extends State<GradientButton> with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  late final Animation<double> _s;
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 110),
-    );
-    _scale = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 110));
+    _s = Tween<double>(begin: 1.0, end: 0.95).animate(CurvedAnimation(parent: _c, curve: Curves.easeInOut));
   }
+  @override void dispose() { _c.dispose(); super.dispose(); }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  bool get _active => widget.enabled && !widget.isLoading;
 
-  Future<void> _handleTap() async {
-    if (!widget.enabled || widget.isLoading) return;
+  Future<void> _tap() async {
+    if (!_active) return;
     HapticFeedback.lightImpact();
-    await _controller.forward();
-    await _controller.reverse();
+    await _c.forward(); await _c.reverse();
     widget.onPressed();
   }
 
   @override
   Widget build(BuildContext context) {
-    final radius = widget.borderRadius ?? AppRadius.button;
-    final isActive = widget.enabled && !widget.isLoading;
-
-    return ScaleTransition(
-      scale: _scale,
+    final r = widget.borderRadius ?? AppRadius.button;
+    return ScaleTransition(scale: _s,
       child: GestureDetector(
-        onTap: _handleTap,
-        onTapDown: (_) {
-          if (isActive) _controller.forward();
-        },
-        onTapUp: (_) {
-          if (isActive) _controller.reverse();
-        },
-        onTapCancel: () {
-          if (isActive) _controller.reverse();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: widget.height,
+        onTap: _tap,
+        onTapDown: (_) { if (_active) _c.forward(); },
+        onTapUp: (_) { if (_active) _c.reverse(); },
+        onTapCancel: () { if (_active) _c.reverse(); },
+        child: AnimatedContainer(duration: const Duration(milliseconds: 200), height: widget.height,
           decoration: BoxDecoration(
-            gradient: isActive ? AppGradients.primaryCta : null,
-            color: isActive ? null : AppColors.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(radius),
-            boxShadow: isActive ? AppShadows.primaryGlow : null,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(radius),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: _handleTap,
+              gradient: _active ? AppGradients.primaryCta : null,
+              color: _active ? null : AppColors.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(r),
+              boxShadow: _active ? AppShadows.primaryGlow : null),
+          child: ClipRRect(borderRadius: BorderRadius.circular(r),
+            child: Material(color: Colors.transparent,
+              child: InkWell(onTap: _tap,
                 splashColor: AppColors.onPrimary.withOpacity(0.08),
                 highlightColor: AppColors.onPrimary.withOpacity(0.04),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: _buildContent(isActive),
-                ),
+                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _content()),
               ),
             ),
           ),
@@ -129,122 +73,42 @@ class _GradientButtonState extends State<GradientButton>
     );
   }
 
-  Widget _buildContent(bool isActive) {
-    final textColor = isActive
-        ? AppColors.onPrimary
-        : AppColors.onSurfaceVariant;
+  Widget _content() {
+    final color = _active ? AppColors.onPrimary : AppColors.onSurfaceVariant;
+    final label = Text(widget.label.toUpperCase(), style: GoogleFonts.manrope(
+        fontSize: 14, fontWeight: FontWeight.w800, color: color, letterSpacing: 1.2));
+    final iconThemed = widget.icon != null
+        ? IconTheme(data: IconThemeData(color: color, size: 20), child: widget.icon!)
+        : null;
 
-    final labelWidget = Text(
-      widget.label.toUpperCase(),
-      style: GoogleFonts.manrope(
-        fontSize: 14,
-        fontWeight: FontWeight.w800,
-        color: textColor,
-        letterSpacing: 1.2,
-      ),
-    );
-
-    // Loading state
-    if (widget.isLoading) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(textColor),
-            ),
-          ),
-          const SizedBox(width: 12),
-          labelWidget,
-        ],
-      );
-    }
-
-    // No icon
-    if (widget.icon == null) {
-      return Center(child: labelWidget);
-    }
-
-    // Icon leading
-    if (widget.iconPosition == IconPosition.leading) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconTheme(
-            data: IconThemeData(color: textColor, size: 20),
-            child: widget.icon!,
-          ),
-          const SizedBox(width: 10),
-          labelWidget,
-        ],
-      );
-    }
-
-    // Icon trailing (default)
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        labelWidget,
-        const SizedBox(width: 10),
-        IconTheme(
-          data: IconThemeData(color: textColor, size: 20),
-          child: widget.icon!,
-        ),
-      ],
-    );
+    if (widget.isLoading) return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      SizedBox(width: 18, height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(color))),
+      const SizedBox(width: 12), label,
+    ]);
+    if (iconThemed == null) return Center(child: label);
+    if (widget.iconPosition == IconPosition.leading) return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      iconThemed, const SizedBox(width: 10), label]);
+    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      label, const SizedBox(width: 10), iconThemed]);
   }
 }
 
-// ─────────────────────────────────────────────
-//  CONVENIENCE CONSTRUCTORS
-// ─────────────────────────────────────────────
-
-/// Pre-built "Proceed to Payment" button variant.
+// Convenience variants
 class PaymentButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final bool isLoading;
-
-  const PaymentButton({
-    super.key,
-    required this.onPressed,
-    this.isLoading = false,
-  });
-
+  final VoidCallback onPressed; final bool isLoading;
+  const PaymentButton({super.key, required this.onPressed, this.isLoading = false});
   @override
-  Widget build(BuildContext context) {
-    return GradientButton(
-      label: 'Proceed to Payment',
-      onPressed: onPressed,
-      isLoading: isLoading,
-      icon: const Icon(Icons.arrow_forward_rounded),
-    );
-  }
+  Widget build(BuildContext context) => GradientButton(
+      label: 'Proceed to Payment', onPressed: onPressed, isLoading: isLoading,
+      icon: const Icon(Icons.arrow_forward_rounded));
 }
 
-/// Pre-built "Add to Order" button variant.
 class AddToOrderButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final String price;
-  final bool isLoading;
-
-  const AddToOrderButton({
-    super.key,
-    required this.onPressed,
-    required this.price,
-    this.isLoading = false,
-  });
-
+  final VoidCallback onPressed; final String price; final bool isLoading;
+  const AddToOrderButton({super.key, required this.onPressed, required this.price, this.isLoading = false});
   @override
-  Widget build(BuildContext context) {
-    return GradientButton(
-      label: 'Add to Order  $price',
-      onPressed: onPressed,
-      isLoading: isLoading,
-      icon: const Icon(Icons.add_rounded),
-      iconPosition: IconPosition.leading,
-    );
-  }
+  Widget build(BuildContext context) => GradientButton(
+      label: 'Add to Order  $price', onPressed: onPressed, isLoading: isLoading,
+      icon: const Icon(Icons.add_rounded), iconPosition: IconPosition.leading);
 }
