@@ -25,16 +25,16 @@ void main() {
     systemNavigationBarDividerColor: Colors.transparent,
   ));
 
-  runApp(const XCoreApp());
+  runApp(const MidnightSommelierApp());
 }
 
-class XCoreApp extends StatefulWidget {
-  const XCoreApp({super.key});
+class MidnightSommelierApp extends StatefulWidget {
+  const MidnightSommelierApp({super.key});
   @override
-  State<XCoreApp> createState() => _XCoreAppState();
+  State<MidnightSommelierApp> createState() => _MidnightSommelierAppState();
 }
 
-class _XCoreAppState extends State<XCoreApp> {
+class _MidnightSommelierAppState extends State<MidnightSommelierApp> {
   final _cart = CartNotifier();
   @override void dispose() { _cart.dispose(); super.dispose(); }
 
